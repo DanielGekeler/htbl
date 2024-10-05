@@ -1,3 +1,5 @@
-import { SayHello } from "./second.js";
+import { Tokenize } from "./tokenizer.js";
 
-SayHello()
+const source = "html[] {}"
+Tokenize(source)
+

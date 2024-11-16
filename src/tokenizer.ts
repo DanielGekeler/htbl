@@ -1,18 +1,37 @@
 interface Token {
     text: string
     consumed: number
-    tokenType: "Name" | "AttrName" | "AttrValue"
+    tokenType: "Name" | "AttrName" | "AttrValue" | "TextBody"
 }
 
 export function Tokenize(text: string) {
+    const tokens = scanSelector(text)
+    let i = tokens.reduce((s, x) => s + x.consumed, 0)
+    if (text[i] == " ") i++ // skip space
+    tokens.push(...scanBody(text.slice(i)))
+
+    tokens.map(x => console.log(x))
+}
+
+function scanBody(text: string): Token[] {
+    if (text[0] == "{") {
+        throw new Error("Unimplemented")
+    } else if (text[0] == '"') {
+        const i = text.slice(1).indexOf('"') + 1
+        return [{ text: text.slice(1, i), consumed: i + 1, tokenType: "TextBody" }]
+    } else {
+        return []
+    }
+}
+
+function scanSelector(text: string): Token[] {
     const nameToken = scanName(text)
     const tokens = [nameToken]
     let i = nameToken.consumed
 
-    if (text[i] == " ") i++  // skip space
+    if (text[i] == " ") i++ // skip space
     tokens.push(...scanAttribute(text.slice(i)))
-
-    tokens.map(x => console.log(x))
+    return tokens
 }
 
 function scanName(text: string): Token {
@@ -32,6 +51,6 @@ function scanAttribute(text: string): Token[] {
 
     const k = text.slice(i).indexOf("]")
     if (k < 0) return []
-    tokens.push({ text: text.slice(i, i + k), consumed: k + 2, tokenType: "AttrValue" })
+    tokens.push({ text: text.slice(i, i + k), consumed: k + 3, tokenType: "AttrValue" })
     return tokens
 }

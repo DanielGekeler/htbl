@@ -1,20 +1,29 @@
 interface Token {
     text: string
     consumed: number
-    tokenType: "Name" | "AttrName" | "AttrValue" | "TextBody" | "Whitespace"
+    tokenType: "Name" | "AttrName" | "AttrValue" | "TextBody" | "Whitespace" | "BodyBegin" | "BodyEnd"
 }
 
 export function Tokenize(text: string) {
+    const tokens = scanElement(text)
+    tokens.map(x => console.log(x))
+}
+
+function scanElement(text: string): Token[] {
     const tokens = scanSelector(text)
     tokens.push(...scanSpaces(text.slice(getOffset(tokens))))
     tokens.push(...scanBody(text.slice(getOffset(tokens))))
-
-    tokens.map(x => console.log(x))
+    return tokens
 }
 
 function scanBody(text: string): Token[] {
     if (text[0] == "{") {
-        throw new Error("Unimplemented")
+        const tokens = scanElement(text)
+        tokens.push(...scanSpaces(text.slice(getOffset(tokens))))
+        if (text[getOffset(tokens)] == "}") {
+            tokens.push({ text: "}", consumed: 1, tokenType: "BodyEnd" })
+        }
+        return tokens
     } else if (text[0] == '"') {
         const i = text.slice(1).indexOf('"') + 1
         return [{ text: text.slice(1, i), consumed: i + 1, tokenType: "TextBody" }]
@@ -24,16 +33,20 @@ function scanBody(text: string): Token[] {
 }
 
 function scanSelector(text: string): Token[] {
-    const nameToken = scanName(text)
-    const tokens = [nameToken]
+    const tokens = scanSpaces(text)
+    if (text.startsWith("{")) {
+        tokens.push({ text: "{", consumed: 1, tokenType: "BodyBegin" })
+    }
 
+    tokens.push(...scanSpaces(text.slice(getOffset(tokens))))
+    tokens.push(scanName(text.slice(getOffset(tokens))))
     tokens.push(...scanSpaces(text.slice(getOffset(tokens))))
     tokens.push(...scanAttribute(text.slice(getOffset(tokens))))
     return tokens
 }
 
 function scanName(text: string): Token {
-    const end_chars = [" ", "[", "{"]
+    const end_chars = [" ", "[", "{", '"']
     const i = Math.min(...end_chars.map(s => text.indexOf(s)).filter(x => x > -1))
     return { text: text.slice(0, i), consumed: i, tokenType: "Name" }
 }

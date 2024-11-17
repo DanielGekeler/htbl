@@ -1,25 +1,24 @@
-interface Token {
+export interface Token {
     text: string
     consumed: number
     tokenType: "Name" | "AttrName" | "AttrValue" | "TextBody" | "Whitespace" | "BodyBegin" | "BodyEnd"
 }
 
 export function Tokenize(text: string) {
-    const tokens = scanElement(text)
-    tokens.map(x => console.log(x))
+    return scanElement(text)
 }
 
 function scanElement(text: string): Token[] {
     const tokens = scanSelector(text)
-    tokens.push(...scanSpaces(text.slice(getOffset(tokens))))
-    tokens.push(...scanBody(text.slice(getOffset(tokens))))
+    applyScanner(scanSpaces, text, tokens)
+    applyScanner(scanBody, text, tokens)
     return tokens
 }
 
 function scanBody(text: string): Token[] {
     if (text[0] == "{") {
         const tokens = scanElement(text)
-        tokens.push(...scanSpaces(text.slice(getOffset(tokens))))
+        applyScanner(scanSpaces, text, tokens)
         if (text[getOffset(tokens)] == "}") {
             tokens.push({ text: "}", consumed: 1, tokenType: "BodyEnd" })
         }
@@ -38,10 +37,10 @@ function scanSelector(text: string): Token[] {
         tokens.push({ text: "{", consumed: 1, tokenType: "BodyBegin" })
     }
 
-    tokens.push(...scanSpaces(text.slice(getOffset(tokens))))
-    tokens.push(scanName(text.slice(getOffset(tokens))))
-    tokens.push(...scanSpaces(text.slice(getOffset(tokens))))
-    tokens.push(...scanAttribute(text.slice(getOffset(tokens))))
+    applyScanner(scanSpaces, text, tokens)
+    applyScanner(scanName, text, tokens)
+    applyScanner(scanSpaces, text, tokens)
+    applyScanner(scanAttribute, text, tokens)
     return tokens
 }
 
@@ -74,4 +73,11 @@ function scanSpaces(text: string): Token[] {
 
 function getOffset(tokens: Token[]): number {
     return tokens.reduce((s, x) => s + x.consumed, 0)
+}
+
+function applyScanner(f: (text: string) => Token | Token[], text: string, tokens: Token[]) {
+    const res = f(text.slice(getOffset(tokens)))
+    if (Array.isArray(res))
+        tokens.push(...res)
+    else tokens.push(res)
 }

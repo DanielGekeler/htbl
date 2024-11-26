@@ -2,6 +2,7 @@ import { Token } from "./tokenizer.js";
 
 interface ParserObject {
     TokensConsumed: number
+    ToHtml(): string
 }
 
 export class Selector implements ParserObject {
@@ -14,6 +15,14 @@ export class Selector implements ParserObject {
         this.Tags = tags
         this.TokensConsumed = tokens
     }
+
+    ToHtml(): string {
+        if (this.Tags.length > 0) {
+            const attributes = this.Tags.map(x => `${x[0]}=${x[1]}`)
+            return `<${this.Name} ${attributes.join(" ")}>`
+        }
+        return `<${this.Name}>`
+    }
 }
 
 export class TextBody implements ParserObject {
@@ -24,6 +33,8 @@ export class TextBody implements ParserObject {
         this.Content = content
         this.TokensConsumed = tokens
     }
+
+    ToHtml(): string { return this.Content }
 }
 
 export class Body implements ParserObject {
@@ -33,6 +44,10 @@ export class Body implements ParserObject {
     constructor(elements: ParserObject[], tokens: number) {
         this.Elements = elements
         this.TokensConsumed = tokens
+    }
+
+    ToHtml(): string {
+        return this.Elements.map(x => x.ToHtml()).join(" ")
     }
 }
 
@@ -46,6 +61,15 @@ export class Element implements ParserObject {
         this.Body = body
         this.TokensConsumed = tokens
     }
+
+    ToHtml(): string {
+        const sel = this.Selector as Selector
+        return sel.ToHtml() + this.Body.ToHtml() + `</${sel.Name}>`
+    }
+}
+
+export function GenerateHtml(elements: ParserObject[]): string {
+    return "<!DOCTYPE html>\n" + elements.map(x => x.ToHtml()).join(" ")
 }
 
 export function Parse(tokens: Token[]): ParserObject[] {

@@ -17,7 +17,9 @@ function scanElement(text: string): Token[] {
 
 function scanBody(text: string): Token[] {
     if (text[0] == "{") {
-        const tokens = scanElement(text)
+        const tokens: Token[] = [{ text: "{", consumed: 1, tokenType: "BodyBegin" }]
+        applyScanner(scanSpaces, text, tokens)
+        applyScanner(scanElement, text, tokens)
         applyScanner(scanSpaces, text, tokens)
         if (text[getOffset(tokens)] == "}") {
             tokens.push({ text: "}", consumed: 1, tokenType: "BodyEnd" })
@@ -33,21 +35,16 @@ function scanBody(text: string): Token[] {
 
 function scanSelector(text: string): Token[] {
     const tokens = scanSpaces(text)
-    if (text.startsWith("{")) {
-        tokens.push({ text: "{", consumed: 1, tokenType: "BodyBegin" })
-    }
-
-    applyScanner(scanSpaces, text, tokens)
     applyScanner(scanName, text, tokens)
     applyScanner(scanSpaces, text, tokens)
     applyScanner(scanAttribute, text, tokens)
     return tokens
 }
 
-function scanName(text: string): Token {
-    const end_chars = [" ", "[", "{", '"']
+function scanName(text: string): Token | Token[] {
+    const end_chars = [" ", "[", "{", "}", '"']
     const i = Math.min(...end_chars.map(s => text.indexOf(s)).filter(x => x > -1))
-    return { text: text.slice(0, i), consumed: i, tokenType: "Name" }
+    return i == 0 ? [] : { text: text.slice(0, i), consumed: i, tokenType: "Name" }
 }
 
 function scanAttribute(text: string): Token[] {

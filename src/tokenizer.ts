@@ -19,8 +19,12 @@ function scanBody(text: string): Token[] {
     if (text[0] == "{") {
         const tokens: Token[] = [{ text: "{", consumed: 1, tokenType: "BodyBegin" }]
         applyScanner(scanSpaces, text, tokens)
-        applyScanner(scanElement, text, tokens)
-        applyScanner(scanSpaces, text, tokens)
+        while (getOffset(tokens) < text.length) {
+            const n = getOffset(tokens)
+            applyScanner(scanElement, text, tokens)
+            if (n == getOffset(tokens)) break
+            applyScanner(scanSpaces, text, tokens)
+        }
         if (text[getOffset(tokens)] == "}") {
             tokens.push({ text: "}", consumed: 1, tokenType: "BodyEnd" })
         }
